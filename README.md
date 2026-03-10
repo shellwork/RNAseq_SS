@@ -1,17 +1,17 @@
 # RNAseq_SS
 
-面向低测序深度 enrichment-based sequencing 数据的 baseline 去噪框架（参考 DeepMerip 思路）。
+A baseline denoising framework for low-depth enrichment-based sequencing data, inspired by DeepMerip.
 
-## 项目目标
+## Project Goal
 
-该 baseline 对应你的 proposal，核心是：
-- 用 **CNN + Transformer** 混合架构建模 coverage profile 的局部模式与长程依赖。
-- 用 **多任务学习** 同时完成：
-  - 回归：预测更干净的连续富集信号。
-  - 分类：预测每个位点是否为 peak。
-- 在 **DataLoader 中执行随机下采样**：每个 batch 随机抽取测序深度比例，让模型学习从不同低深度输入恢复原始高深度信号。
+This baseline is aligned with your proposal and focuses on:
+- Modeling both local patterns and long-range dependencies in coverage profiles using a **CNN + Transformer** hybrid architecture.
+- Using **multi-task learning** for:
+  - Regression: predict cleaner continuous enrichment signal.
+  - Classification: predict whether each position is a peak.
+- Performing **random downsampling inside the DataLoader** so each batch contains varying sequencing depths, enabling the model to learn recovery of high-depth signal from low-depth inputs.
 
-## 建议文件结构
+## Recommended File Structure
 
 ```text
 RNAseq_SS/
@@ -33,42 +33,42 @@ RNAseq_SS/
 └── README.md
 ```
 
-## Data 设计（重点：下采样）
+## Data Design (Key: Downsampling)
 
-`src/rnaseq_ss/data.py` 里新增了 `downsample_coverage`，并在 `SyntheticCoverageDataset.__getitem__` 中按样本随机选择 `depth_ratio`（如 0.1/0.2/0.5/1.0），然后对高深度信号做 Poisson thinning：
+`src/rnaseq_ss/data.py` provides `downsample_coverage` and applies per-sample random `depth_ratio` selection in `SyntheticCoverageDataset.__getitem__` (for example, 0.1/0.2/0.5/1.0), then performs Poisson thinning on high-depth signal.
 
-- 输入：`noisy_signal`（第 0 通道是下采样后的 noisy coverage；最后一个通道显式写入本样本 depth ratio）。
-- 标签：
-  - `clean_signal`：原始高深度信号（回归目标）。
-  - `peak_label`：由 clean signal 导出的 peak 二分类标签。
+- Inputs: `noisy_signal` (channel 0 is downsampled noisy coverage; the last channel explicitly stores the sample-specific depth ratio).
+- Targets:
+  - `clean_signal`: original high-depth signal (regression target).
+  - `peak_label`: peak/non-peak binary labels derived from clean signal.
 
-这样可直接模拟“同一个位点在不同采样深度下观测到的信号质量变化”，对应你们项目里“随机下采样训练恢复原始信号”的核心目标。
+This setup directly simulates how the same site behaves under different sequencing depths, which matches the core objective of training with random downsampling to reconstruct the original signal.
 
-## 快速开始
+## Quick Start
 
-1. 安装依赖（建议在虚拟环境中）：
+1. Install dependencies (recommended in a virtual environment):
 
 ```bash
 pip install -e .
 ```
 
-2. 运行 baseline 训练：
+2. Run baseline training:
 
 ```bash
 python scripts/train_baseline.py --config configs/baseline_m6a.yaml
 ```
 
-3. 跑单元测试：
+3. Run tests:
 
 ```bash
 pytest -q
 ```
 
-## 对接真实数据时如何改
+## How to Integrate Real Data
 
-- 把 `SyntheticCoverageDataset` 替换为真实数据集类：
-  - 读取原始高深度 IP/Input coverage。
-  - 在 `__getitem__` 里随机采样 depth ratio，动态生成低深度输入。
-  - 保留高深度信号作为监督标签。
-- 你可以在 `configs/*.yaml` 中为不同 domain 设置不同 `depth_candidates`。
-- 后续可增加评估指标：AUROC/AUPRC、peak-level F1、Pearson/Spearman。
+- Replace `SyntheticCoverageDataset` with a real dataset class that:
+  - Reads original high-depth IP/Input coverage.
+  - Randomly samples `depth_ratio` in `__getitem__` and dynamically creates low-depth inputs.
+  - Keeps high-depth signal as supervision target.
+- Configure domain-specific `depth_candidates` in `configs/*.yaml`.
+- Add richer evaluation metrics later: AUROC/AUPRC, peak-level F1, Pearson/Spearman.
