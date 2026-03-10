@@ -1,0 +1,23 @@
+data:
+  feature_dim: 7
+  window_size: 256
+  train_size: 4096
+  val_size: 1024
+  batch_size: 32
+  depth_candidates: [0.05, 0.1, 0.2, 0.5, 1.0]
+
+model:
+  feature_dim: 7
+  d_model: 128
+  cnn_channels: 128
+  num_heads: 8
+  num_transformer_layers: 2
+  dropout: 0.1
+
+training:
+  lr: 0.0002
+  weight_decay: 0.0001
+  epochs: 8
+  regression_weight: 1.0
+  classification_weight: 1.5
+  device: cpu
