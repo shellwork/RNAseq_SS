@@ -1,0 +1,16 @@
+[project]
+name = "rnaseq-ss"
+version = "0.1.0"
+description = "Baseline DeepMerip-style denoising model for low-depth sequencing"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.1",
+  "pyyaml>=6.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
