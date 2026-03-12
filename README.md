@@ -4,14 +4,14 @@ A baseline denoising framework for low-depth enrichment-based sequencing data, i
 
 ## Project Goal
 
-This baseline is aligned with your proposal and focuses on:
+This baseline focuses on:
 - Modeling both local patterns and long-range dependencies in coverage profiles using a **CNN + Transformer** hybrid architecture.
 - Using **multi-task learning** for:
   - Regression: predict cleaner continuous enrichment signal.
   - Classification: predict whether each position is a peak.
 - Performing **random downsampling inside the DataLoader** so each batch contains varying sequencing depths, enabling the model to learn recovery of high-depth signal from low-depth inputs.
 
-## Recommended File Structure
+## Planned File Structure
 
 ```text
 RNAseq_SS/
