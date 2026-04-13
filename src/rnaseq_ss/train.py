@@ -152,7 +152,7 @@ def evaluate(model, loader, device, mse_crit, bce_crit, cls_weight: float):
 # 4. Training loop
 # ===========================================================================
 def train(
-    npz_path: str       = "0_5_ds.npz",
+    npz_path: str       = "scripts/0_5_ds.npz",
     # model hyper-params
     feature_dim: int    = 1,
     d_model: int        = 128,
@@ -294,7 +294,7 @@ def train(
 # ===========================================================================
 if __name__ == "__main__":
     train(
-        npz_path="combined.npz",
+        npz_path="scripts/0_5_ds.npz",
         feature_dim=1,
         d_model=128,
         num_res_blocks=6,

@@ -2,14 +2,21 @@ import torch
 
 from rnaseq_ss.data import SyntheticCoverageDataset, collate_samples, downsample_coverage
 from rnaseq_ss.model import DeepMeripBaseline
+from rnaseq_ss.CNN import DeepMeripCNN
 
 
-def test_forward_shapes():
-    model = DeepMeripBaseline(feature_dim=5, d_model=64, cnn_channels=64, num_heads=8, num_transformer_layers=1)
-    x = torch.randn(3, 128, 5)
-    reg, cls = model(x)
+def test_baseline_forward_shapes():
+    model = DeepMeripBaseline(feature_dim=1, d_model=64, nhead=4, num_encoder_layers=3)
+    x = torch.randn(3, 128, 1)
+    reg = model(x)
     assert reg.shape == (3, 128)
-    assert cls.shape == (3, 128)
+
+
+def test_cnn_forward_shapes():
+    model = DeepMeripCNN(feature_dim=1, d_model=64, cnn_channels=64, num_res_blocks=3)
+    x = torch.randn(3, 128, 1)
+    reg = model(x)
+    assert reg.shape == (3, 128)
 
 
 def test_downsample_coverage_preserves_shape():

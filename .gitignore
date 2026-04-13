@@ -6,7 +6,7 @@ data/
 *.npz
 # C extensions
 *.so
-
+results/
 # Distribution / packaging
 .Python
 build/

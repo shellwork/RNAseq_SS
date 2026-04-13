@@ -1,3 +1,13 @@
+"""
+DeepMeripCNN — Pure CNN with residual blocks + dilated convolutions (single-task regression).
+
+Our solution model: replaces the Transformer with stacked residual CNN blocks
+and progressively dilated convolutions to capture long-range context.
+
+Input:  [batch, length, feature_dim]   (feature_dim=1 for single-channel coverage)
+Output: [batch, length]                (predicted clean signal)
+"""
+
 from __future__ import annotations
 
 import torch
@@ -25,19 +35,19 @@ class ResidualBlock(nn.Module):
 
 class DeepMeripCNN(nn.Module):
     """
-    Pure CNN baseline for signal denoising with multi-task heads.
+    Pure CNN baseline for signal denoising (single-task regression).
 
-    Replaces the Transformer in DeepMeripBaseline with stacked
-    residual CNN blocks. Uses progressively larger dilations to
-    capture long-range context without a Transformer.
-
-    Input:  [batch, length, feature_dim]  (e.g. feature_dim=4: IP, Input, ratio, log-ratio)
-    Output: (regression [batch, length], classification_logits [batch, length])
+    Architecture:
+      1. Linear projection: feature_dim → d_model
+      2. Front-end CNN (local feature extraction)
+      3. Stacked residual blocks (deep feature processing)
+      4. Dilated convolutions (long-range context capture)
+      5. Regression head → ReLU (non-negative output)
     """
 
     def __init__(
         self,
-        feature_dim: int = 4,
+        feature_dim: int = 1,
         d_model: int = 128,
         cnn_channels: int = 128,
         num_res_blocks: int = 6,
@@ -59,7 +69,7 @@ class DeepMeripCNN(nn.Module):
             nn.GELU(),
         )
 
-        # ---- stacked residual blocks (replaces Transformer) ----
+        # ---- stacked residual blocks ----
         self.res_blocks = nn.Sequential(
             *[ResidualBlock(d_model, kernel_size=5, dropout=dropout) for _ in range(num_res_blocks)]
         )
@@ -74,42 +84,27 @@ class DeepMeripCNN(nn.Module):
             nn.GELU(),
         )
 
-        # ---- task heads (same as original) ----
+        # ---- regression head ----
         self.regression_head = nn.Sequential(
             nn.Linear(d_model, d_model // 2),
             nn.GELU(),
             nn.Linear(d_model // 2, 1),
+            nn.ReLU(),
         )
 
-        self.classification_head = nn.Sequential(
-            nn.Linear(d_model, d_model // 2),
-            nn.GELU(),
-            nn.Linear(d_model // 2, 1),
-        )
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        x: [batch, length, feature_dim]
+        returns: [batch, length]
+        """
+        h = self.input_proj(x)       # [B, L, d_model]
+        h = h.transpose(1, 2)        # [B, d_model, L]
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """x shape: [batch, length, feature_dim]."""
-
-        # project input features to d_model dimensions
-        h = self.input_proj(x)  # [B, L, d_model]
-
-        # switch to [B, C, L] for Conv1d
-        h = h.transpose(1, 2)
-
-        # local feature extraction
         h = self.front_cnn(h)
-
-        # deep residual processing
         h = self.res_blocks(h)
-
-        # long-range context via dilated convolutions
         h = self.dilated_cnn(h)
 
-        # back to [B, L, d_model] for linear heads
-        h = h.transpose(1, 2)
+        h = h.transpose(1, 2)        # [B, L, d_model]
 
-        # multi-task outputs
         regression = self.regression_head(h).squeeze(-1)  # [B, L]
-        classification_logits = self.classification_head(h).squeeze(-1)  # [B, L]
-
-        return regression, classification_logits
+        return regression
