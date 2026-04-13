@@ -6,7 +6,8 @@ data/
 *.npz
 # C extensions
 *.so
-
+evaluation/
+.vscode/
 # Distribution / packaging
 .Python
 build/
