@@ -446,7 +446,7 @@ def plot_comparison(histories, test_metrics, save_dir):
         ax.axhline(y=best_r2, color="gray", linestyle=":", alpha=0.5)
         ax.annotate(f"best={best_r2:.4f} (ep {best_ep})",
                     xy=(best_ep, best_r2), fontsize=9,
-                    xytext=(best_ep + len(list(epochs)) * 0.05, best_r2 - 0.01),
+                    xytext=(30, -15), textcoords="offset points",
                     arrowprops=dict(arrowstyle="->", color="gray"))
         ax.set_xlabel("Epoch"); ax.set_ylabel("$R^2$"); ax.set_title("Validation $R^2$")
         ax.grid(True, alpha=0.3)
