@@ -6,7 +6,7 @@ data/
 *.npz
 # C extensions
 *.so
-results/
+*.pt
 evaluation/
 .vscode/
 # Distribution / packaging
