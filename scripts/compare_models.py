@@ -45,6 +45,14 @@ VAL_CHROMS = {"chr7", "chrX"}
 # ===========================================================================
 # Regression Metrics
 # ===========================================================================
+def _json_default(o):
+    if isinstance(o, np.generic):
+        return o.item()
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
+
+
 def regression_metrics(y_pred: np.ndarray, y_true: np.ndarray) -> dict:
     mask = np.isfinite(y_pred) & np.isfinite(y_true)
     y_pred, y_true = y_pred[mask], y_true[mask]
@@ -537,8 +545,28 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--save-dir", default="results/comparison")
+    parser.add_argument("--plot-only", action="store_true",
+                        help="Skip training; re-plot from saved metrics.json & histories.json")
     args = parser.parse_args()
     os.makedirs(args.save_dir, exist_ok=True)
+
+    if args.plot_only:
+        metrics_path = os.path.join(args.save_dir, "metrics.json")
+        hist_path = os.path.join(args.save_dir, "histories.json")
+        with open(metrics_path) as f:
+            saved = json.load(f)
+        with open(hist_path) as f:
+            histories = json.load(f)
+        test_metrics = {}
+        for name, entry in saved.items():
+            test_metrics[name] = {
+                "overall": entry["overall"],
+                "per_depth": entry.get("per_depth", {}),
+                "per_sample": entry.get("per_sample", {}),
+            }
+        plot_comparison(histories, test_metrics, args.save_dir)
+        print("Re-plot done.")
+        return
 
     # ── GPU setup ──
     n_gpus = torch.cuda.device_count()
@@ -651,7 +679,11 @@ def main():
         save_data[name] = entry
 
     with open(os.path.join(args.save_dir, "metrics.json"), "w") as f:
-        json.dump(save_data, f, indent=2)
+        json.dump(save_data, f, indent=2, default=_json_default)
+
+    # ── Save histories for later re-plotting ──
+    with open(os.path.join(args.save_dir, "histories.json"), "w") as f:
+        json.dump(histories, f, indent=2, default=_json_default)
 
     # ── Plot ──
     plot_comparison(histories, test_metrics, args.save_dir)
